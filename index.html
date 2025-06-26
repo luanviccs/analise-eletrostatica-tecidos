@@ -3,26 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explorador Interativo de Eletrostática Têxtil</title>
+    <title>Explorador Interativo de Eletrostática</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Warm Neutrals & Soft Blue -->
-    <!-- Application Structure Plan: A aplicação foi estruturada em um formato de abas temáticas (O Fenômeno, A Série, O Experimento, Estudo de Caso) para transformar o conteúdo denso e linear do relatório em uma jornada de aprendizado não-linear e exploratória. Essa arquitetura permite que o usuário navegue livremente entre os conceitos fundamentais, a visualização de dados, a metodologia prática e a aplicação real, o que melhora a usabilidade e a retenção do conhecimento em comparação com a simples leitura de um documento. Uma nova aba "Assistente IA" foi adicionada para introduzir funcionalidades LLM sem interromper o fluxo de aprendizado original. -->
-    <!-- Visualization & Content Choices: 
-        - Report Info: Série Triboelétrica (Tabela 1) -> Goal: Comparar -> Viz/Presentation Method: Gráfico de barras horizontal interativo -> Interaction: Seletores dropdown para comparar dois materiais dinamicamente -> Justification: Transforma uma tabela estática em uma ferramenta de aprendizado ativa e visualmente intuitiva, permitindo a formulação de hipóteses. -> Library/Method: Chart.js/Canvas.
-        - Report Info: Causa do choque no cenário industrial -> Goal: Organizar/Relacionar -> Viz/Presentation Method: Diagrama de fluxo de causa e efeito -> Interaction: Clicar em cada passo para expandir informações -> Justification: Simplifica um processo complexo em etapas visuais e gerenciáveis, facilitando a compreensão da cadeia causal. -> Library/Method: HTML/CSS/JS.
-        - Report Info: Metodologia experimental -> Goal: Informar/Organizar -> Viz/Presentation Method: Layout de cartões com diagramas simplificados (Eletroscópio) -> Interaction: Elementos visuais que reagem ao hover/clique -> Justification: Apresenta os métodos experimentais de forma mais didática e menos textual que o relatório original. -> Library/Method: HTML/CSS/JS.
-        - User Input -> Goal: Analyze/Synthesize -> Viz/Presentation Method: Seção de Análise de Risco com LLM -> Interaction: Usuário insere cenário, clica em botão para receber análise de segurança e recomendações. -> Justification: Aplica o conhecimento teórico a cenários práticos e personalizados. -> Library/Method: Gemini API via Fetch/JS.
-        - User Input -> Goal: Create/Plan -> Viz/Presentation Method: Seção de Planejamento de Experimento com LLM -> Interaction: Usuário lista materiais, clica em botão para receber um protocolo experimental customizado. -> Justification: Transforma a aplicação em uma ferramenta de criação, aumentando o engajamento e a utilidade prática. -> Library/Method: Gemini API via Fetch/JS.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth;
+            background-color: #f8f9fa; /* Fundo cinza muito claro */
+            color: #212529; /* Texto quase preto para contraste */
+        }
+        .ufabc-green {
+            background-color: #004B3E; /* Verde institucional UFABC */
+        }
+        .ufabc-green-text {
+            color: #004B3E;
         }
         .chart-container {
             position: relative;
@@ -34,12 +31,13 @@
             max-height: 70vh;
         }
         .nav-link {
-            transition: all 0.3s ease;
-            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+            border-bottom: 3px solid transparent;
+            color: #6c757d; /* Cinza para links inativos */
         }
         .nav-link.active {
-            border-bottom-color: #3b82f6; /* blue-500 */
-            color: #1e40af; /* blue-800 */
+            border-bottom-color: #004B3E; /* Linha verde no link ativo */
+            color: #004B3E; /* Texto verde no link ativo */
             font-weight: 600;
         }
         .tab-content {
@@ -53,220 +51,151 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .loader {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #FFF;
-            border-bottom-color: #3b82f6;
-            border-radius: 50%;
-            display: inline-block;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem;
         }
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .gemini-response {
-            white-space: pre-wrap;
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px;
-        }
-        .gemini-response h3 { font-size: 1.1em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
-        .gemini-response ul { list-style-type: disc; margin-left: 20px; }
-        .gemini-response ol { list-style-type: decimal; margin-left: 20px; }
-        .gemini-response strong { font-weight: bold; }
-
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="ufabc-green text-white p-6 shadow-md">
+        <div class="container mx-auto text-center">
+            <h1 class="text-3xl md:text-4xl font-bold">Explorador Interativo de Eletrostática</h1>
+            <p class="mt-2 text-lg opacity-90">Uma Análise Visual e Prática da Eletrização de Materiais</p>
+        </div>
+    </header>
 
     <div class="container mx-auto p-4 md:p-8">
-        
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Explorador Interativo de Eletrostática Têxtil</h1>
-            <p class="mt-2 text-lg text-slate-600">Uma análise visual dos princípios da eletrização por atrito em tecidos, agora com assistente IA.</p>
-        </header>
 
-        <nav class="mb-8 border-b border-slate-200">
-            <ul class="flex flex-wrap -mb-px justify-center text-md font-medium text-center text-slate-500">
-                <li class="mr-2">
-                    <a href="#" id="nav-fenomeno" class="nav-link inline-block p-4 rounded-t-lg active">O Fenômeno</a>
+        <!-- Navegação por Abas -->
+        <nav class="mb-8 border-b border-gray-200">
+            <ul class="flex flex-wrap -mb-px justify-center text-md font-medium text-center">
+                <li class="mr-4">
+                    <a href="#" id="nav-fenomeno" class="nav-link inline-block p-4 active">O Fenômeno</a>
                 </li>
-                <li class="mr-2">
-                    <a href="#" id="nav-serie" class="nav-link inline-block p-4 rounded-t-lg">A Série Triboelétrica</a>
+                <li class="mr-4">
+                    <a href="#" id="nav-serie" class="nav-link inline-block p-4">A Série Triboelétrica</a>
                 </li>
-                <li class="mr-2">
-                    <a href="#" id="nav-experimento" class="nav-link inline-block p-4 rounded-t-lg">O Experimento</a>
+                <li class="mr-4">
+                    <a href="#" id="nav-experimento" class="nav-link inline-block p-4">O Experimento</a>
                 </li>
-                 <li class="mr-2">
-                    <a href="#" id="nav-caso" class="nav-link inline-block p-4 rounded-t-lg">Estudo de Caso</a>
-                </li>
-                <li class="mr-2">
-                    <a href="#" id="nav-ia" class="nav-link inline-block p-4 rounded-t-lg font-bold">✨ Assistente IA</a>
+                 <li>
+                    <a href="#" id="nav-caso" class="nav-link inline-block p-4">Estudo de Caso</a>
                 </li>
             </ul>
         </nav>
 
         <main>
-            <!-- Content for existing tabs remains the same -->
+            <!-- Seção 1: O Fenômeno -->
             <div id="content-fenomeno" class="tab-content active">
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4 text-slate-800">1. O Que Causa a Eletricidade Estática?</h2>
-                    <p class="mb-6 text-slate-600">Esta seção explora os princípios físicos fundamentais por trás da eletricidade estática em materiais do dia a dia. O fenômeno central não é a "condutividade", mas sim a capacidade dos materiais de se carregarem eletricamente através do atrito, um processo chamado de <strong>efeito triboelétrico</strong>. Vamos desvendar como isso acontece e por que alguns materiais acumulam mais carga que outros.</p>
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4 ufabc-green-text">1. A Origem da Eletricidade Estática</h2>
+                    <p class="mb-6 text-gray-600">O "choque" que sentimos ao tocar em certos objetos não vem da condutividade, mas sim de um fenômeno chamado <strong>efeito triboelétrico</strong>. Esta seção explora como o simples atrito entre materiais pode gerar um acúmulo de cargas elétricas, criando a eletricidade estática.</p>
 
                     <div class="grid md:grid-cols-2 gap-6">
-                        <div class="border border-slate-200 p-5 rounded-lg">
-                            <h3 class="font-bold text-xl mb-3 text-blue-700">Efeito Triboelétrico</h3>
-                            <p class="mb-4">Quando dois materiais diferentes são atritados, um pode "roubar" elétrons do outro. O material que perde elétrons fica com carga <strong>positiva (+)</strong>, e o que ganha elétrons fica com carga <strong>negativa (-)</strong>. É este desequilíbrio que cria a eletricidade estática.</p>
-                             <p class="text-sm text-slate-500">Materiais isolantes, como plásticos e muitos tecidos, são particularmente bons em acumular essa carga, pois não permitem que os elétrons se movam livremente e se dissipem.</p>
+                        <div class="border border-gray-200 p-5 rounded-lg bg-gray-50">
+                            <h3 class="font-bold text-xl mb-3">Efeito Triboelétrico</h3>
+                            <p>Ao atritar dois materiais diferentes, um pode transferir elétrons para o outro. O que perde elétrons fica com carga <strong>positiva (+)</strong>, e o que ganha, com carga <strong>negativa (-)</strong>. Isolantes, como tecidos sintéticos, são eficientes em manter essa carga acumulada.</p>
                         </div>
-                        <div class="border border-slate-200 p-5 rounded-lg">
-                            <h3 class="font-bold text-xl mb-3 text-blue-700">Condutores vs. Isolantes</h3>
-                            <p class="mb-4"><strong>Condutores</strong> (como metais) permitem que os elétrons se movam facilmente. Qualquer carga que eles adquirem é rapidamente distribuída e neutralizada.</p>
-                            <p class="mb-4"><strong>Isolantes</strong> (como borracha, poliuretano) mantêm os elétrons "presos". A carga gerada pelo atrito fica acumulada na superfície, levando a potenciais elétricos elevados.</p>
+                        <div class="border border-gray-200 p-5 rounded-lg bg-gray-50">
+                            <h3 class="font-bold text-xl mb-3">Descarga Eletrostática (ESD)</h3>
+                            <p>O choque ocorre quando um corpo carregado se aproxima de um condutor (como sua mão). A carga acumulada "salta" pelo ar para neutralizar a diferença de potencial, criando uma faísca. Este é o princípio da Descarga Eletrostática, ou ESD.</p>
                         </div>
-                    </div>
-                     <div class="mt-6 border border-red-200 bg-red-50 p-5 rounded-lg">
-                        <h3 class="font-bold text-xl mb-3 text-red-700">Descarga Eletrostática (ESD): O "Choque"</h3>
-                        <p>Quando um material isolante acumula carga suficiente, ele cria uma grande diferença de potencial em relação a um condutor próximo (como sua mão). Se a distância for pequena o suficiente, a carga pode "saltar" abruptamente pelo ar para equalizar os potenciais. Essa transferência rápida de elétrons é o que sentimos como um choque. Embora geralmente inofensivo para nós, o ESD pode danificar componentes eletrônicos sensíveis e até causar incêndios em ambientes industriais.</p>
                     </div>
                 </div>
             </div>
 
+            <!-- Seção 2: A Série Triboelétrica -->
             <div id="content-serie" class="tab-content">
-                 <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4 text-slate-800">2. A Série Triboelétrica Interativa</h2>
-                    <p class="mb-6 text-slate-600">A Série Triboelétrica é uma lista que organiza os materiais de acordo com sua tendência de ganhar ou perder elétrons. Materiais no topo ficam positivos, e os na base, negativos. Use esta ferramenta para prever o resultado do atrito entre diferentes materiais. Quanto mais distantes na lista, maior a carga gerada.</p>
+                 <div class="card">
+                    <h2 class="text-2xl font-bold mb-4 ufabc-green-text">2. A Série Triboelétrica Interativa</h2>
+                    <p class="mb-6 text-gray-600">A Série Triboelétrica é uma lista que organiza materiais pela sua tendência de se tornarem positivos ou negativos após o atrito. Use a ferramenta abaixo para visualizar e prever o resultado da interação entre diferentes materiais.</p>
+                    
                     <div class="chart-container mb-6">
                         <canvas id="triboChart"></canvas>
                     </div>
-                    <div class="grid md:grid-cols-3 gap-4 bg-slate-100 p-4 rounded-lg border border-slate-200">
+
+                    <div class="grid md:grid-cols-3 gap-4 bg-gray-100 p-4 rounded-lg border border-gray-200">
                         <div>
-                            <label for="material1" class="block mb-2 text-sm font-medium text-slate-900">Escolha o Material 1:</label>
-                            <select id="material1" class="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></select>
+                            <label for="material1" class="block mb-2 text-sm font-medium">Material 1:</label>
+                            <select id="material1" class="bg-white border border-gray-300 text-sm rounded-lg focus:ring-green-800 focus:border-green-800 block w-full p-2.5"></select>
                         </div>
                         <div>
-                            <label for="material2" class="block mb-2 text-sm font-medium text-slate-900">Escolha o Material 2:</label>
-                            <select id="material2" class="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></select>
+                            <label for="material2" class="block mb-2 text-sm font-medium">Material 2:</label>
+                            <select id="material2" class="bg-white border border-gray-300 text-sm rounded-lg focus:ring-green-800 focus:border-green-800 block w-full p-2.5"></select>
                         </div>
                         <div class="md:col-span-1 flex items-end">
-                             <button id="compareBtn" class="w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors">Comparar</button>
+                             <button id="compareBtn" class="w-full ufabc-green text-white font-bold py-2.5 px-4 rounded-lg hover:bg-opacity-90 transition-colors">Comparar</button>
                         </div>
                     </div>
-                    <div id="comparisonResult" class="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg hidden">
-                        <p class="text-blue-800"></p>
+                    <div id="comparisonResult" class="mt-6 p-5 bg-green-50 border-l-4 border-green-600 rounded-r-lg hidden">
+                        <p class="text-green-900"></p>
                     </div>
                 </div>
             </div>
 
+            <!-- Seção 3: O Experimento -->
             <div id="content-experimento" class="tab-content">
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4 text-slate-800">3. Como Testar as Propriedades Eletrostáticas?</h2>
-                    <p class="mb-6 text-slate-600">Baseado no relatório, é possível investigar a eletricidade estática com um experimento simples, barato e eficaz, ideal para um projeto científico. O objetivo é criar uma classificação relativa dos tecidos, observando qual acumula mais carga. A seguir, apresentamos o método recomendado.</p>
-                    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg mb-6">
-                        <h4 class="font-bold text-amber-800">Variável Crítica: Umidade</h4>
-                        <p class="text-amber-700 text-sm">A umidade do ar afeta drasticamente os resultados! Moléculas de água na superfície dos tecidos ajudam a dissipar a carga. Para obter resultados comparáveis, todos os testes devem ser feitos no mesmo dia e local, sob as mesmas condições ambientais.</p>
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4 ufabc-green-text">3. Proposta Experimental de Baixo Custo</h2>
+                    <p class="mb-6 text-gray-600">É possível investigar a eletrostática com um experimento eficaz e acessível, ideal para um projeto científico. O método do eletroscópio de folhas permite classificar tecidos medindo o acúmulo de carga de forma qualitativa e visual.</p>
+                    
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg mb-6">
+                        <h4 class="font-bold text-yellow-800">Fator Crítico: Umidade</h4>
+                        <p class="text-yellow-700 text-sm">A umidade do ar interfere nos resultados, pois ajuda a dissipar a carga estática. Para garantir a validade do experimento, todos os testes devem ser realizados sob as mesmas condições ambientais.</p>
                     </div>
-                    <div class="grid md:grid-cols-2 gap-8">
+
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
                         <div>
-                            <h3 class="text-xl font-bold mb-3 text-slate-800">Método: Eletroscópio de Folhas</h3>
-                            <p class="mb-4">Este é o método mais recomendado pela sua simplicidade e foco nos princípios físicos. É um detector de carga que você pode construir com materiais caseiros.</p>
-                            <div class="border border-slate-200 rounded-lg p-4">
-                                <h4 class="font-semibold mb-2">Construção:</h4>
-                                <ul class="list-disc list-inside text-sm space-y-1">
-                                    <li>Frasco de vidro com tampa de plástico.</li>
-                                    <li>Fio de cobre rígido.</li>
-                                    <li>Duas pequenas e finas folhas de papel alumínio.</li>
-                                </ul>
-                                <h4 class="font-semibold mt-4 mb-2">Protocolo Experimental:</h4>
+                            <h3 class="text-xl font-bold mb-3">Método: Eletroscópio de Folhas</h3>
+                            <p class="mb-4">Este dispositivo simples detecta cargas elétricas. Ao aproximar um objeto carregado, as finas folhas de alumínio se repelem. A intensidade da repulsão (o ângulo de afastamento) é proporcional à quantidade de carga.</p>
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="font-semibold mb-2">Protocolo Experimental:</h4>
                                 <ol class="list-decimal list-inside text-sm space-y-2">
-                                    <li><strong>Padronize o atrito:</strong> Esfregue cada tecido no mesmo material de referência (ex: lã, cabelo) por um número fixo de vezes (ex: 10).</li>
-                                    <li><strong>Aproxime (não toque):</strong> Aproxime o tecido atritado do terminal de cobre do eletroscópio.</li>
-                                    <li><strong>Observe e registre:</strong> Meça ou fotografe o ângulo de afastamento das folhas de alumínio. Um ângulo maior significa mais carga acumulada.</li>
-                                    <li><strong>Repita:</strong> Realize no mínimo 3 medições por tecido para garantir a consistência.</li>
+                                    <li><strong>Padronizar o atrito:</strong> Esfregar cada tecido em um material de referência (ex: um bastão de PVC) um número fixo de vezes.</li>
+                                    <li><strong>Aproximar por indução:</strong> Aproxime (sem tocar) o tecido do terminal metálico do eletroscópio.</li>
+                                    <li><strong>Registrar a deflexão:</strong> Observe e registre o ângulo de afastamento das folhas. Maior ângulo significa maior carga.</li>
+                                    <li><strong>Garantir a reprodutibilidade:</strong> Realize múltiplas medições para cada tecido e calcule a média.</li>
                                 </ol>
                             </div>
                         </div>
-                        <div class="flex items-center justify-center">
+                        <div class="flex items-center justify-center p-4">
                             <div class="text-center">
-                                <div class="relative w-48 h-64 mx-auto border-2 border-slate-400 rounded-t-full rounded-b-lg bg-slate-100 p-2">
-                                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-yellow-400 rounded-full border-2 border-slate-500"></div>
-                                    <div class="absolute top-10 left-1/2 w-1 h-24 bg-slate-500 -translate-x-1/2"></div>
-                                    <div id="folha1" class="absolute top-32 left-1/2 w-0.5 h-16 bg-slate-600 origin-top transition-transform duration-300" style="transform: translateX(-100%) rotate(-5deg);"></div>
-                                    <div id="folha2" class="absolute top-32 left-1/2 w-0.5 h-16 bg-slate-600 origin-top transition-transform duration-300" style="transform: rotate(5deg);"></div>
+                                <div class="relative w-48 h-64 mx-auto border-2 border-gray-400 rounded-t-full rounded-b-lg bg-gray-100 p-2">
+                                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gray-300 rounded-full border-2 border-gray-500"></div>
+                                    <div class="absolute top-10 left-1/2 w-1 h-24 bg-gray-500 -translate-x-1/2"></div>
+                                    <div id="folha1" class="absolute top-32 left-1/2 w-0.5 h-16 bg-gray-600 origin-top transition-transform duration-300" style="transform: translateX(-100%) rotate(-5deg);"></div>
+                                    <div id="folha2" class="absolute top-32 left-1/2 w-0.5 h-16 bg-gray-600 origin-top transition-transform duration-300" style="transform: rotate(5deg);"></div>
                                 </div>
-                                <p class="mt-4 font-semibold">Diagrama de um Eletroscópio</p>
-                                <button id="charge-btn" class="mt-2 bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 text-sm">Simular Aproximação de Carga</button>
+                                <p class="mt-4 font-semibold text-gray-700">Diagrama de um Eletroscópio</p>
+                                <button id="charge-btn" class="mt-2 bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 text-sm transition-colors">Simular Carga</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+             <!-- Seção 4: Estudo de Caso -->
             <div id="content-caso" class="tab-content">
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4 text-slate-800">4. Estudo de Caso: O Mistério dos Choques na Fábrica</h2>
-                    <p class="mb-6 text-slate-600">Vamos aplicar o que aprendemos para entender um problema real: por que um trabalhador de uma fábrica de tecidos leva choques ao manusear tecidos de poliuretano (PU) com pequenos componentes metálicos? A resposta está na combinação das propriedades dos materiais.</p>
-                    <div class="space-y-4">
-                        <div class="p-4 border border-slate-200 rounded-lg">
-                            <p><strong class="text-blue-600">Passo 1: Acúmulo de Carga no Isolante</strong><br>O poliuretano (PU) é um excelente isolante e está na base da série triboelétrica (tende a ficar negativo). O atrito constante com as mãos e máquinas faz com que ele acumule uma grande quantidade de carga estática negativa.</p>
-                        </div>
-                        <div class="text-center text-2xl font-bold text-slate-400">↓</div>
-                        <div class="p-4 border border-slate-200 rounded-lg">
-                            <p><strong class="text-blue-600">Passo 2: O Papel do Metal - Poder das Pontas</strong><br>Os pequenos filamentos metálicos no tecido, por serem condutores isolados dentro da matriz de PU, não dissipam a carga. Em vez disso, a carga negativa acumulada no PU migra para eles e se concentra em suas pontas e bordas afiadas. Este fenômeno é conhecido como "poder das pontas".</p>
-                        </div>
-                         <div class="text-center text-2xl font-bold text-slate-400">↓</div>
-                        <div class="p-4 border border-slate-200 rounded-lg">
-                            <p><strong class="text-blue-600">Passo 3: Intensificação do Campo Elétrico</strong><br>Essa alta concentração de carga nas pontas metálicas cria um campo elétrico local extremamente intenso, muito maior do que no resto do tecido.</p>
-                        </div>
-                         <div class="text-center text-2xl font-bold text-slate-400">↓</div>
-                         <div class="p-4 border-2 border-red-400 rounded-lg bg-red-50">
-                            <p><strong class="text-red-600">Passo 4: Descarga Eletrostática (O Choque!)</strong><br>Quando a mão do trabalhador (que está em um potencial elétrico diferente) se aproxima de uma dessas "pontas quentes", o campo elétrico intenso rompe a rigidez dielétrica do ar. A carga salta em forma de faísca (ESD) do metal para a mão, causando o choque.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Seção 5: Assistente IA -->
-            <div id="content-ia" class="tab-content">
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4 text-slate-800">✨ Assistente de Eletrostática com IA</h2>
-                    <p class="mb-8 text-slate-600">Use o poder da inteligência artificial para aprofundar seus conhecimentos. Analise riscos de segurança em cenários específicos ou crie um plano de experimento com os materiais que você tem disponíveis.</p>
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4 ufabc-green-text">4. Estudo de Caso: Choques na Indústria Têxtil</h2>
+                    <p class="mb-6 text-gray-600">Aplicando os conceitos, podemos diagnosticar um problema real: por que trabalhadores levam choques ao manusear tecidos de poliuretano com detalhes metálicos? A causa é uma combinação de fatores.</p>
                     
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <!-- Ferramenta 1: Analisador de Risco -->
-                        <div class="border border-slate-200 p-5 rounded-lg">
-                            <h3 class="font-bold text-xl mb-3 text-blue-700">Analisador de Risco de ESD</h3>
-                            <p class="text-sm mb-4 text-slate-500">Descreva uma situação ou ambiente de trabalho para que a IA analise os riscos de descarga eletrostática (ESD) e sugira medidas de controle.</p>
-                            <label for="risk-scenario" class="block mb-2 text-sm font-medium text-slate-900">Descreva o cenário:</label>
-                            <textarea id="risk-scenario" rows="4" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Trabalhador em uma cabine de pintura de carros, usando roupas de poliéster e manuseando peças metálicas."></textarea>
-                            <button id="analyze-risk-btn" class="mt-4 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
-                                ✨ Analisar Risco
-                            </button>
-                            <div id="risk-loader" class="text-center mt-4 hidden">
-                                <div class="loader mx-auto"></div>
-                                <p class="text-sm mt-2 text-slate-500">Analisando...</p>
-                            </div>
-                            <div id="risk-result" class="mt-4 text-sm"></div>
+                    <div class="space-y-4">
+                        <div class="p-4 border border-gray-200 rounded-lg">
+                            <p><strong class="ufabc-green-text">1. Acúmulo de Carga no Isolante:</strong> O poliuretano (PU), um excelente isolante, acumula uma grande quantidade de carga estática negativa devido ao atrito constante com máquinas e outras superfícies.</p>
                         </div>
-
-                        <!-- Ferramenta 2: Planejador de Experimento -->
-                        <div class="border border-slate-200 p-5 rounded-lg">
-                            <h3 class="font-bold text-xl mb-3 text-green-700">Planejador de Experimentos</h3>
-                            <p class="text-sm mb-4 text-slate-500">Liste os materiais que você tem disponíveis (um por linha) e a IA criará um protocolo experimental para testar a eletrização por atrito.</p>
-                            <label for="materials-list" class="block mb-2 text-sm font-medium text-slate-900">Materiais disponíveis:</label>
-                            <textarea id="materials-list" rows="4" class="block p-2.5 w-full text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Pedaço de lã&#x0a;Caneta de plástico&#x0a;Régua de acrílico&#x0a;Pedaços de papel alumínio"></textarea>
-                             <button id="plan-experiment-btn" class="mt-4 w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
-                                ✨ Gerar Protocolo
-                            </button>
-                            <div id="experiment-loader" class="text-center mt-4 hidden">
-                                <div class="loader mx-auto" style="border-bottom-color: #16a34a;"></div>
-                                <p class="text-sm mt-2 text-slate-500">Planejando...</p>
-                            </div>
-                            <div id="experiment-result" class="mt-4 text-sm"></div>
+                        <div class="text-center text-2xl font-bold text-gray-400">↓</div>
+                        <div class="p-4 border border-gray-200 rounded-lg">
+                            <p><strong class="ufabc-green-text">2. Concentração de Carga no Condutor:</strong> A carga acumulada no PU migra para os pequenos filamentos metálicos do tecido. Por serem condutores, eles concentram essa carga em suas pontas e bordas afiadas (fenômeno conhecido como "poder das pontas").</p>
+                        </div>
+                         <div class="text-center text-2xl font-bold text-gray-400">↓</div>
+                         <div class="p-4 border-2 border-red-400 rounded-lg bg-red-50">
+                            <p><strong class="text-red-700">3. Descarga Eletrostática (O Choque):</strong> A mão do trabalhador, em um potencial elétrico diferente, aproxima-se de uma dessas pontas metálicas. O campo elétrico intenso rompe a rigidez do ar, e a carga salta em forma de faísca (ESD), causando o choque.</p>
                         </div>
                     </div>
                 </div>
@@ -276,7 +205,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // --- Existing Logic ---
             const triboData = [
                 { name: 'Pele Humana (seca)', value: 15 }, { name: 'Vidro', value: 12 }, { name: 'Cabelo Humano', value: 10 }, { name: 'Nylon', value: 8 }, { name: 'Lã', value: 6 }, { name: 'Seda', value: 3 }, { name: 'Alumínio', value: 1 }, { name: 'Papel', value: 0.5 }, { name: 'Algodão', value: 0 }, { name: 'Aço', value: -0.5 }, { name: 'Madeira', value: -2 }, { name: 'Poliéster', value: -4 }, { name: 'Isopor (Poliestireno)', value: -7 }, { name: 'Filme PVC', value: -10 }, { name: 'Poliuretano (PU)', value: -12 }, { name: 'Teflon', value: -15 },
             ].sort((a, b) => b.value - a.value);
@@ -295,7 +223,6 @@
                     option1.value = item.name;
                     option1.textContent = item.name;
                     materialSelect1.appendChild(option1);
-
                     const option2 = document.createElement('option');
                     option2.value = item.name;
                     option2.textContent = item.name;
@@ -313,28 +240,37 @@
                 const dataValues = triboData.map(d => d.value);
                 
                 const backgroundColors = triboData.map(d => {
-                    if (highlightedMaterials.includes(d.name)) return '#ef4444';
-                    return d.value > 0 ? '#fbbf24' : (d.value < 0 ? '#60a5fa' : '#d1d5db');
+                    if (highlightedMaterials.includes(d.name)) return '#f59e0b'; // Laranja para destaque
+                    return d.value > 0 ? 'rgba(0, 75, 62, 0.6)' : (d.value < 0 ? 'rgba(108, 117, 125, 0.6)' : 'rgba(206, 212, 218, 0.8)'); // Verde, cinza, cinza claro
                 });
                 const borderColors = triboData.map(d => {
-                    if (highlightedMaterials.includes(d.name)) return '#b91c1c';
-                    return d.value > 0 ? '#d97706' : (d.value < 0 ? '#2563eb' : '#9ca3af');
+                     if (highlightedMaterials.includes(d.name)) return '#b45309'; // Laranja escuro
+                    return d.value > 0 ? '#004B3E' : '#6c757d'; // Verde escuro, cinza escuro
                 });
 
                 if (chart) chart.destroy();
                 chart = new Chart(ctx, {
                     type: 'bar',
-                    data: { labels: labels, datasets: [{ label: 'Tendência de Carga', data: dataValues, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1 }] },
+                    data: { labels: labels, datasets: [{ label: 'Tendência de Carga', data: dataValues, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1.5 }] },
                     options: {
                         indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false },
-                            title: { display: true, text: 'Posição Relativa na Série Triboelétrica', font: { size: 16 } },
+                            title: { display: true, text: 'Posição na Série Triboelétrica', font: { size: 16, weight: '600' }, color: '#343a40' },
                              tooltip: {
-                                callbacks: { label: (c) => `Tende a ficar ${c.raw > 0 ? 'POSITIVO' : c.raw < 0 ? 'NEGATIVO' : 'NEUTRO'}` }
+                                callbacks: { label: (c) => ` Tendência de Carga: ${c.raw > 0 ? 'POSITIVA' : c.raw < 0 ? 'NEGATIVA' : 'NEUTRA'}` }
                             }
                         },
-                        scales: { x: { title: { display: true, text: 'Negativo <--- Neutro ---> Positivo' } }, y: { ticks: { font: { size: 10 } } } }
+                        scales: { 
+                            x: { 
+                                title: { display: true, text: 'Negativo <--- Neutro ---> Positivo', font: { weight: '500'} },
+                                grid: { color: '#e9ecef' }
+                            }, 
+                            y: { 
+                                ticks: { font: { size: 10 } },
+                                grid: { display: false }
+                             } 
+                        }
                     }
                 });
             }
@@ -351,7 +287,7 @@
                 const mat1 = triboData.find(m => m.name === mat1_name);
                 const mat2 = triboData.find(m => m.name === mat2_name);
                 let [positiveMat, negativeMat] = mat1.value > mat2.value ? [mat1, mat2] : [mat2, mat1];
-                resultText.innerHTML = `Ao atritar <strong>${mat1.name}</strong> com <strong>${mat2.name}</strong>:<br>- <strong>${positiveMat.name}</strong> tenderá a perder elétrons e ficará com carga <strong>POSITIVA</strong>.<br>- <strong>${negativeMat.name}</strong> tenderá a ganhar elétrons e ficará com carga <strong>NEGATIVA</strong>.`;
+                resultText.innerHTML = `Ao atritar <strong>${mat1.name}</strong> com <strong>${mat2.name}</strong>:<br>- <strong>${positiveMat.name}</strong> tenderá a ficar com carga <strong>POSITIVA</strong>.<br>- <strong>${negativeMat.name}</strong> tenderá a ficar com carga <strong>NEGATIVA</strong>.`;
                 comparisonResult.classList.remove('hidden');
                 createTriboChart([mat1_name, mat2_name]);
             }
@@ -382,7 +318,7 @@
                     if(charged) {
                         folha1.style.transform = 'translateX(-100%) rotate(-5deg)';
                         folha2.style.transform = 'rotate(5deg)';
-                        chargeBtn.textContent = 'Simular Aproximação de Carga';
+                        chargeBtn.textContent = 'Simular Carga';
                     } else {
                         folha1.style.transform = 'translateX(-100%) rotate(-45deg)';
                         folha2.style.transform = 'rotate(45deg)';
@@ -392,87 +328,15 @@
                 });
             }
             
-            // --- Gemini API Logic ---
-            const analyzeRiskBtn = document.getElementById('analyze-risk-btn');
-            const planExperimentBtn = document.getElementById('plan-experiment-btn');
-            
-            const riskLoader = document.getElementById('risk-loader');
-            const experimentLoader = document.getElementById('experiment-loader');
-            
-            const riskResult = document.getElementById('risk-result');
-            const experimentResult = document.getElementById('experiment-result');
+            // Carga inicial do gráfico na primeira vez que a aba é aberta
+            document.getElementById('nav-serie').addEventListener('click', () => {
+                if (!chart) {
+                    populateSelects();
+                    createTriboChart();
+                    handleCompare();
+                }
+            }, { once: true });
 
-            function markdownToHtml(text) {
-                return text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/### (.*?)\n/g, '<h3>$1</h3>')
-                    .replace(/## (.*?)\n/g, '<h2>$1</h2>')
-                    .replace(/# (.*?)\n/g, '<h1>$1</h1>')
-                    .replace(/^- (.*?)$/gm, '<ul><li>$1</li></ul>')
-                    .replace(/^\d+\. (.*?)$/gm, '<ol><li>$1</li></ol>')
-                    .replace(/<\/ul>\n<ul>/g, '')
-                    .replace(/<\/ol>\n<ol>/g, '');
-            }
-            
-            async function callGemini(prompt, loaderElement, resultElement, buttonElement) {
-                loaderElement.classList.remove('hidden');
-                resultElement.innerHTML = '';
-                buttonElement.disabled = true;
-                
-                try {
-                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                    const payload = { contents: chatHistory };
-                    const apiKey = "";
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                    
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.statusText}`);
-                    }
-                    
-                    const result = await response.json();
-                    
-                    if (result.candidates && result.candidates.length > 0) {
-                        const text = result.candidates[0].content.parts[0].text;
-                        resultElement.innerHTML = `<div class="gemini-response">${markdownToHtml(text)}</div>`;
-                    } else {
-                        throw new Error("Resposta da API inválida ou vazia.");
-                    }
-                } catch (error) {
-                    resultElement.innerHTML = `<p class="text-red-500">Ocorreu um erro: ${error.message}</p>`;
-                } finally {
-                    loaderElement.classList.add('hidden');
-                    buttonElement.disabled = false;
-                }
-            }
-
-            analyzeRiskBtn.addEventListener('click', () => {
-                const scenario = document.getElementById('risk-scenario').value;
-                if (!scenario.trim()) {
-                    riskResult.innerHTML = '<p class="text-red-500">Por favor, descreva um cenário.</p>';
-                    return;
-                }
-                const prompt = `Você é um especialista em segurança industrial e descarga eletrostática (ESD). Analise o seguinte cenário e descreva os principais riscos de ESD de forma clara. Em seguida, recomende 5 medidas de segurança específicas e práticas para mitigar esses riscos. Formate a resposta usando Markdown.
-                Cenário: "${scenario}"`;
-                callGemini(prompt, riskLoader, riskResult, analyzeRiskBtn);
-            });
-            
-            planExperimentBtn.addEventListener('click', () => {
-                const materials = document.getElementById('materials-list').value;
-                if (!materials.trim()) {
-                    experimentResult.innerHTML = '<p class="text-red-500">Por favor, liste os materiais.</p>';
-                    return;
-                }
-                const prompt = `Você é um professor de física experimental. Baseado na lista de materiais fornecida, crie um protocolo experimental simples, seguro e passo a passo (em formato de lista numerada) para um estudante do ensino médio testar a eletrização por atrito e classificar os materiais em uma série triboelétrica relativa. Explique brevemente como construir um detector de carga simples (como um pêndulo elétrico ou eletroscópio) com itens caseiros, se necessário. Use Markdown para formatação.
-                Materiais disponíveis:\n${materials}`;
-                callGemini(prompt, experimentLoader, experimentResult, planExperimentBtn);
-            });
         });
     </script>
 
